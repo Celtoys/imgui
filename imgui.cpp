@@ -412,7 +412,7 @@ static int ImStricmp(const char* str1, const char* str2)
 static char* ImStrdup(const char *str)
 {
     char *buff = (char*)ImGui::MemAlloc(strlen(str) + 1);
-    IM_ASSERT(buff);
+    IM_ASSERT(buff != 0);
     strcpy(buff, str);
     return buff;
 }
