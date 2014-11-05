@@ -203,6 +203,7 @@
  - optimization: specialize for height based clipping first (assume widgets never go up + height tests before width tests?)
 */
 
+#define IMGUI_IMPL
 #include "imgui.h"
 
 #ifdef _MSC_VER
