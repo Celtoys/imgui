@@ -15,15 +15,6 @@ struct ImGuiStyle;
 struct ImGuiWindow;
 
 #include "imconfig.h"
-#include <float.h>          // FLT_MAX
-#include <stdarg.h>         // va_list
-#include <stddef.h>         // ptrdiff_t
-#include <stdlib.h>         // NULL, malloc
-
-#ifndef IM_ASSERT
-#include <assert.h>
-#define IM_ASSERT(_EXPR)    assert(_EXPR)
-#endif
 
 typedef unsigned int ImU32;
 typedef unsigned short ImWchar;

@@ -204,12 +204,6 @@
 */
 
 #include "imgui.h"
-#include <ctype.h>      // toupper
-#include <math.h>       // sqrt
-#include <stdint.h>     // intptr_t
-#include <stdio.h>      // vsnprintf
-#include <string.h>     // memset
-#include <new>          // new (ptr)
 
 #ifdef _MSC_VER
 #pragma warning (disable: 4996) // 'This function or variable may be unsafe': strcpy, strdup, sprintf, vsnprintf, sscanf, fopen

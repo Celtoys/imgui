@@ -42,3 +42,27 @@ namespace ImGui
 }
 */
 
+#define IMGUI_USE_CRT
+#ifdef IMGUI_USE_CRT
+
+// Public dependencies
+#include <float.h>          // FLT_MAX
+#include <stdarg.h>         // va_list
+#include <stddef.h>         // ptrdiff_t
+#include <stdlib.h>         // NULL, malloc
+
+#ifndef IM_ASSERT
+#include <assert.h>
+#define IM_ASSERT(_EXPR)    assert(_EXPR)
+#endif
+
+// Private dependencies
+#include <ctype.h>      // toupper
+#include <math.h>       // sqrt
+#include <stdint.h>     // intptr_t
+#include <stdio.h>      // vsnprintf
+#include <string.h>     // memset
+#include <new>          // new (ptr)
+
+#endif
+
