@@ -42,7 +42,7 @@ namespace ImGui
 }
 */
 
-#define IMGUI_USE_CRT
+//#define IMGUI_USE_CRT
 #ifdef IMGUI_USE_CRT
 
 // Public dependencies
