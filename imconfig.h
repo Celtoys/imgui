@@ -42,22 +42,17 @@ namespace ImGui
 }
 */
 
-#define IMGUI_DLL
+#ifndef __clcpp_parse__
+	#define IMGUI_DLL
+#endif
+
 #ifdef IMGUI_DLL
 
-	#ifdef __clcpp_parse__
-		#define IMGUI_API
+	#ifdef IMGUI_IMPL
+		#define IMGUI_API __declspec(dllexport)
 	#else
-		#ifdef IMGUI_IMPL
-			#define IMGUI_API __declspec(dllexport)
-		#else
-			#define IMGUI_API __declspec(dllimport)
-		#endif
+		#define IMGUI_API __declspec(dllimport)
 	#endif
-
-#else
-
-	#define IMGUI_API
 
 #endif
 
