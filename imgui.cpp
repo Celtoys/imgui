@@ -287,6 +287,9 @@ ImGuiStyle::ImGuiStyle()
     Colors[ImGuiCol_Button]                 = ImVec4(0.67f, 0.40f, 0.40f, 0.60f);
     Colors[ImGuiCol_ButtonHovered]          = ImVec4(0.67f, 0.40f, 0.40f, 1.00f);
     Colors[ImGuiCol_ButtonActive]           = ImVec4(0.80f, 0.50f, 0.50f, 1.00f);
+    Colors[ImGuiCol_ImageButton]            = ImVec4(0.67f, 0.67f, 0.67f, 0.60f);
+    Colors[ImGuiCol_ImageButtonHovered]     = ImVec4(0.67f, 0.67f, 0.67f, 1.00f);
+    Colors[ImGuiCol_ImageButtonActive]      = ImVec4(1.00f, 1.00f, 1.00f, 1.00f);
     Colors[ImGuiCol_Header]                 = ImVec4(0.40f, 0.40f, 0.90f, 0.45f);
     Colors[ImGuiCol_HeaderHovered]          = ImVec4(0.45f, 0.45f, 0.90f, 0.80f);
     Colors[ImGuiCol_HeaderActive]           = ImVec4(0.60f, 0.60f, 0.80f, 1.00f);
@@ -2624,6 +2627,9 @@ const char* GetStyleColorName(ImGuiCol idx)
     case ImGuiCol_Button: return "Button";
     case ImGuiCol_ButtonHovered: return "ButtonHovered";
     case ImGuiCol_ButtonActive: return "ButtonActive";
+    case ImGuiCol_ImageButton: return "ImageButton";
+    case ImGuiCol_ImageButtonHovered: return "ImageButtonHovered";
+    case ImGuiCol_ImageButtonActive: return "ImageButtonActive";
     case ImGuiCol_Header: return "Header";
     case ImGuiCol_HeaderHovered: return "HeaderHovered";
     case ImGuiCol_HeaderActive: return "HeaderActive";
@@ -2826,6 +2832,21 @@ void TextV(const char* fmt, va_list args)
     static char buf[1024];
     const char* text_end = buf + ImFormatStringV(buf, IM_ARRAYSIZE(buf), fmt, args);
     TextUnformatted(buf, text_end);
+}
+
+void Image(int index, const ImVec2& size, const ImVec2& uv, const ImVec2& uv_size)
+{
+    ImGuiWindow* window = GetCurrentWindow();
+    if (window->SkipItems)
+        return;
+
+    ImGuiAabb bb(window->DC.CursorPos, window->DC.CursorPos + size);
+    ItemSize(bb.GetSize(), &bb.Min);
+
+    if (ClipAdvance(bb))
+      return;
+
+    window->DrawList->AddImage(index, bb.Min, bb.Max, uv, uv_size, 0xFFFFFFFF);
 }
 
 void Text(const char* fmt, ...)
@@ -3123,6 +3144,37 @@ bool SmallButton(const char* label)
     const ImU32 col = window->Color((hovered && held) ? ImGuiCol_ButtonActive : hovered ? ImGuiCol_ButtonHovered : ImGuiCol_Button);
     RenderFrame(bb.Min, bb.Max, col);
     RenderText(bb.Min + ImVec2(style.FramePadding.x,0), label);
+
+    return pressed;
+}
+
+bool ImageButton(const char* label, int index, const ImVec2& size, const ImVec2& uv, const ImVec2& uv_size, bool repeat_when_held)
+{
+    ImGuiState& g = GImGui;
+    ImGuiWindow* window = GetCurrentWindow();
+    if (window->SkipItems)
+        return false;
+
+    const ImGuiStyle& style = g.Style;
+    const ImGuiID id = window->GetID(label);
+
+    const ImGuiAabb bb(window->DC.CursorPos, window->DC.CursorPos+size + style.FramePadding*2.0f);
+    ItemSize(bb);
+
+    if (ClipAdvance(bb))
+        return false;
+
+    bool hovered, held;
+    bool pressed = ButtonBehaviour(bb, id, &hovered, &held, true, repeat_when_held);
+
+    // Get actual image bounds for rendering
+    ImGuiAabb image_bb(bb);
+    image_bb.Min += style.FramePadding;
+    image_bb.Max -= style.FramePadding;
+
+    // Render
+    const ImU32 col = window->Color((hovered && held) ? ImGuiCol_ImageButtonActive : hovered ? ImGuiCol_ImageButtonHovered : ImGuiCol_ImageButton);
+    window->DrawList->AddImage(index, image_bb.Min, image_bb.Max, uv, uv_size, col);
 
     return pressed;
 }
@@ -4019,6 +4071,53 @@ bool RadioButton(const char* label, bool active)
 bool RadioButton(const char* label, int* v, int v_button)
 {
     const bool pressed = ImGui::RadioButton(label, *v == v_button);
+    if (pressed)
+    {
+        *v = v_button;
+    }
+    return pressed;
+}
+
+bool ImageRadioButton(const char* label, int index, const ImVec2& size, const ImVec2& uv, const ImVec2& uv_size, bool active)
+{
+    ImGuiState& g = GImGui;
+    ImGuiWindow* window = GetCurrentWindow();
+    if (window->SkipItems)
+        return false;
+
+    const ImGuiStyle& style = g.Style;
+    const ImGuiID id = window->GetID(label);
+
+    const ImGuiAabb bb(window->DC.CursorPos, window->DC.CursorPos + ImVec2(size.y + style.FramePadding.y*2-1, size.y + style.FramePadding.y*2-1));
+    ItemSize(bb);
+
+    if (ClipAdvance(bb))
+        return false;
+
+    const bool hovered = (g.HoveredWindow == window) && (g.HoveredId == 0) && IsMouseHoveringBox(bb);
+    const bool pressed = hovered && g.IO.MouseClicked[0];
+    if (hovered)
+        g.HoveredId = id;
+
+    // Get actual image bounds for rendering
+    ImGuiAabb image_bb(bb);
+    image_bb.Min += style.FramePadding;
+    image_bb.Max -= style.FramePadding;
+    
+    const ImU32 col = window->Color(((hovered && pressed) || active) ? ImGuiCol_ImageButtonActive : hovered ? ImGuiCol_ImageButtonHovered : ImGuiCol_ImageButton);
+    window->DrawList->AddImage(index, image_bb.Min, image_bb.Max, uv, uv_size, col);
+    if (active)
+      window->DrawList->AddRect(bb.Min, bb.Max, 0xFFFFFFFF);
+
+    if (g.LogEnabled)
+        LogText(bb.GetTL(), active ? "(x)" : "( )");
+
+    return pressed;
+}
+
+bool ImageRadioButton(const char* label, int index, const ImVec2& size, const ImVec2& uv, const ImVec2& uv_size, int* v, int v_button)
+{
+    const bool pressed = ImGui::ImageRadioButton(label, index, size, uv, uv_size, *v == v_button);
     if (pressed)
     {
         *v = v_button;
@@ -5221,6 +5320,8 @@ void Color(const char* prefix, unsigned int v)
 // ImDrawList
 //-----------------------------------------------------------------------------
 
+static ImVec4 GDefaultClipRect(-9999.0f,-9999.0f, +9999.0f, +9999.0f);
+
 void ImDrawList::Clear()
 {
     commands.resize(0);
@@ -5229,39 +5330,76 @@ void ImDrawList::Clear()
     clip_rect_stack.resize(0);
 }
 
-void ImDrawList::PushClipRect(const ImVec4& clip_rect)
+void ImDrawList::NewCmd(const ImVec4& clip_rect, unsigned int image_index)
 {
-    if (!commands.empty() && commands.back().vtx_count == 0)
+    ImDrawCmd draw_cmd;
+    draw_cmd.vtx_count = 0;
+    draw_cmd.clip_rect = clip_rect;
+    draw_cmd.image_index = image_index;
+    commands.push_back(draw_cmd);
+}
+
+void ImDrawList::SetClipRect(const ImVec4& clip_rect)
+{
+    if (commands.empty())
     {
-        // Reuse empty command because high-level clipping may have discarded the other vertices already
+        // Kick-off draw list with default image index
+        NewCmd(clip_rect, 0);
+    }
+
+    else if (commands.back().vtx_count == 0)
+    {
+        // No vertices added yet due to high-level clipping so just change the existing clip rect
         commands.back().clip_rect = clip_rect;
     }
+
     else
     {
-        ImDrawCmd draw_cmd;
-        draw_cmd.vtx_count = 0;
-        draw_cmd.clip_rect = clip_rect;
-        commands.push_back(draw_cmd);
+        // Copy image index from previous command
+        NewCmd(clip_rect, commands.back().image_index);
     }
+}
+
+void ImDrawList::SetImageIndex(unsigned int image_index)
+{
+    if (commands.empty())
+    {
+        // Kick-off draw list with the default clip rect
+        NewCmd(GDefaultClipRect, image_index);
+    }
+
+    else if (commands.back().vtx_count == 0)
+    {
+        // No vertices added yet
+
+        // Coalesce last command with the one prior if they have the same image index
+        // This happens when AddImage does [ SetImage(i), SetImage(0) ] [ SetImage(i), SetImage(0) ]
+        // and doesn't add vertices in-between
+        if (commands.size() > 1 && commands[commands.size() - 2].image_index == image_index)
+            commands.pop_back();
+        else
+            // Otherwise just overwrite the last index
+            commands.back().image_index = image_index;
+    }
+
+    else
+    {
+        // Copy clip rect from previous command
+        NewCmd(commands.back().clip_rect, image_index);
+    }
+}
+
+void ImDrawList::PushClipRect(const ImVec4& clip_rect)
+{
+    SetClipRect(clip_rect);
     clip_rect_stack.push_back(clip_rect);
 }
 
 void ImDrawList::PopClipRect()
 {
     clip_rect_stack.pop_back();
-    const ImVec4 clip_rect = clip_rect_stack.empty() ? ImVec4(-9999.0f,-9999.0f, +9999.0f, +9999.0f) : clip_rect_stack.back();
-    if (!commands.empty() && commands.back().vtx_count == 0)
-    {
-        // Reuse empty command because high-level clipping may have discarded the other vertices already
-        commands.back().clip_rect = clip_rect;
-    }
-    else
-    {
-        ImDrawCmd draw_cmd;
-        draw_cmd.vtx_count = 0;
-        draw_cmd.clip_rect = clip_rect;
-        commands.push_back(draw_cmd);
-    }
+    const ImVec4 clip_rect = clip_rect_stack.empty() ? GDefaultClipRect : clip_rect_stack.back();
+    SetClipRect(clip_rect);
 }
 
 void ImDrawList::ReserveVertices(unsigned int vtx_count)
@@ -5280,6 +5418,14 @@ void ImDrawList::AddVtx(const ImVec2& pos, ImU32 col)
     vtx_write->pos = pos;
     vtx_write->col = col;
     vtx_write->uv = GImGui.IO.FontTexUvForWhite;
+    vtx_write++;
+}
+
+void ImDrawList::AddVtxUv(const ImVec2& pos, ImU32 col, const ImVec2& uv)
+{
+    vtx_write->pos = pos;
+    vtx_write->col = col;
+    vtx_write->uv = uv;
     vtx_write++;
 }
 
@@ -5505,6 +5651,27 @@ void ImDrawList::AddText(ImFont font, float font_size, const ImVec2& pos, ImU32 
     const size_t vtx_count = vtx_buffer.size() - vtx_begin;
     commands.back().vtx_count -= (unsigned int)(vtx_count_max - vtx_count);
     vtx_write -= (vtx_count_max - vtx_count);
+}
+
+void ImDrawList::AddImage(int index, const ImVec2& a, const ImVec2& b, const ImVec2& uv0, const ImVec2& uv_size, ImU32 col)
+{
+    if ((col >> 24) == 0)
+        return;
+
+    SetImageIndex(index);
+
+    ImVec2 uv1(uv0.x + uv_size.x, uv0.y + uv_size.y);
+
+    ReserveVertices(6);
+    AddVtxUv(ImVec2(a.x,a.y), col, ImVec2(uv0.x,uv0.y));
+    AddVtxUv(ImVec2(b.x,a.y), col, ImVec2(uv1.x,uv0.y));
+    AddVtxUv(ImVec2(b.x,b.y), col, ImVec2(uv1.x,uv1.y));
+    AddVtxUv(ImVec2(a.x,a.y), col, ImVec2(uv0.x,uv0.y));
+    AddVtxUv(ImVec2(b.x,b.y), col, ImVec2(uv1.x,uv1.y));
+    AddVtxUv(ImVec2(a.x,b.y), col, ImVec2(uv0.x,uv1.y));
+
+    // Restore to default
+    SetImageIndex(0);
 }
 
 //-----------------------------------------------------------------------------
