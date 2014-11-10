@@ -201,7 +201,6 @@ namespace ImGui
     IMGUI_API void          PopID();
 
     // Widgets
-    IMGUI_API void          Image(int index, const ImVec2& size, const ImVec2& uv, const ImVec2& uv_size);
     IMGUI_API void          Text(const char* fmt, ...);
     IMGUI_API void          TextV(const char* fmt, va_list args);
     IMGUI_API void          TextColored(const ImVec4& col, const char* fmt, ...);               // shortcut for PushStyleColor(ImGuiCol_Text, col); Text(fmt, ...); PopStyleColor();
@@ -215,7 +214,8 @@ namespace ImGui
     IMGUI_API void          BulletTextV(const char* fmt, va_list args);
     IMGUI_API bool          Button(const char* label, ImVec2 size = ImVec2(0,0), bool repeat_when_held = false);
     IMGUI_API bool          SmallButton(const char* label);
-    IMGUI_API bool          ImageButton(const char* label, int index, const ImVec2& size, const ImVec2& uv, const ImVec2& uv_size, bool repeat_when_held = false);
+    IMGUI_API void          Image(int index, const ImVec2& size, const ImVec2& uv0, const ImVec2& uv1);
+    IMGUI_API bool          ImageButton(const char* label, int index, const ImVec2& size, const ImVec2& uv0, const ImVec2& uv1, bool repeat_when_held = false);
     IMGUI_API bool          CollapsingHeader(const char* label, const char* str_id = NULL, const bool display_frame = true, const bool default_open = false);
     IMGUI_API bool          SliderFloat(const char* label, float* v, float v_min, float v_max, const char* display_format = "%.3f", float power = 1.0f);     // adjust display_format to decorate the value with a prefix or a suffix. Use power!=1.0 for logarithmic sliders.
     IMGUI_API bool          SliderFloat2(const char* label, float v[2], float v_min, float v_max, const char* display_format = "%.3f", float power = 1.0f);
@@ -231,8 +231,8 @@ namespace ImGui
     IMGUI_API bool          CheckboxFlags(const char* label, unsigned int* flags, unsigned int flags_value);
     IMGUI_API bool          RadioButton(const char* label, bool active);
     IMGUI_API bool          RadioButton(const char* label, int* v, int v_button);
-    IMGUI_API bool          ImageRadioButton(const char* label, int index, const ImVec2& size, const ImVec2& uv, const ImVec2& uv_size, bool active);
-    IMGUI_API bool          ImageRadioButton(const char* label, int index, const ImVec2& size, const ImVec2& uv, const ImVec2& uv_size, int* v, int v_button);
+    IMGUI_API bool          ImageRadioButton(const char* label, int index, const ImVec2& size, const ImVec2& uv0, const ImVec2& uv1, bool active);
+    IMGUI_API bool          ImageRadioButton(const char* label, int index, const ImVec2& size, const ImVec2& uv0, const ImVec2& uv1, int* v, int v_button);
     IMGUI_API bool          InputText(const char* label, char* buf, size_t buf_size, ImGuiInputTextFlags flags = 0);
     IMGUI_API bool          InputFloat(const char* label, float* v, float step = 0.0f, float step_fast = 0.0f, int decimal_precision = -1, ImGuiInputTextFlags extra_flags = 0);
     IMGUI_API bool          InputFloat2(const char* label, float v[2], int decimal_precision = -1);
@@ -654,7 +654,7 @@ struct ImDrawList
     IMGUI_API void  AddCircleFilled(const ImVec2& centre, float radius, ImU32 col, int num_segments = 12);
     IMGUI_API void  AddArc(const ImVec2& center, float rad, ImU32 col, int a_min, int a_max, bool tris = false, const ImVec2& third_point_offset = ImVec2(0,0));
     IMGUI_API void  AddText(ImFont font, float font_size, const ImVec2& pos, ImU32 col, const char* text_begin, const char* text_end, float wrap_width = 0.0f);
-    IMGUI_API void  AddImage(int index, const ImVec2& a, const ImVec2& b, const ImVec2& uv0, const ImVec2& uv_size, ImU32 col);
+    IMGUI_API void  AddImage(int index, const ImVec2& a, const ImVec2& b, const ImVec2& uv0, const ImVec2& uv1, ImU32 col);
 };
 
 // Optional bitmap font data loader & renderer into vertices

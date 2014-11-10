@@ -2834,21 +2834,6 @@ void TextV(const char* fmt, va_list args)
     TextUnformatted(buf, text_end);
 }
 
-void Image(int index, const ImVec2& size, const ImVec2& uv, const ImVec2& uv_size)
-{
-    ImGuiWindow* window = GetCurrentWindow();
-    if (window->SkipItems)
-        return;
-
-    ImGuiAabb bb(window->DC.CursorPos, window->DC.CursorPos + size);
-    ItemSize(bb.GetSize(), &bb.Min);
-
-    if (ClipAdvance(bb))
-      return;
-
-    window->DrawList->AddImage(index, bb.Min, bb.Max, uv, uv_size, 0xFFFFFFFF);
-}
-
 void Text(const char* fmt, ...)
 {
     va_list args;
@@ -3148,7 +3133,22 @@ bool SmallButton(const char* label)
     return pressed;
 }
 
-bool ImageButton(const char* label, int index, const ImVec2& size, const ImVec2& uv, const ImVec2& uv_size, bool repeat_when_held)
+void Image(int index, const ImVec2& size, const ImVec2& uv0, const ImVec2& uv1)
+{
+    ImGuiWindow* window = GetCurrentWindow();
+    if (window->SkipItems)
+        return;
+
+    ImGuiAabb bb(window->DC.CursorPos, window->DC.CursorPos + size);
+    ItemSize(bb.GetSize(), &bb.Min);
+
+    if (ClipAdvance(bb))
+      return;
+
+    window->DrawList->AddImage(index, bb.Min, bb.Max, uv0, uv1, 0xFFFFFFFF);
+}
+
+bool ImageButton(const char* label, int index, const ImVec2& size, const ImVec2& uv0, const ImVec2& uv1, bool repeat_when_held)
 {
     ImGuiState& g = GImGui;
     ImGuiWindow* window = GetCurrentWindow();
@@ -3174,7 +3174,7 @@ bool ImageButton(const char* label, int index, const ImVec2& size, const ImVec2&
 
     // Render
     const ImU32 col = window->Color((hovered && held) ? ImGuiCol_ImageButtonActive : hovered ? ImGuiCol_ImageButtonHovered : ImGuiCol_ImageButton);
-    window->DrawList->AddImage(index, image_bb.Min, image_bb.Max, uv, uv_size, col);
+    window->DrawList->AddImage(index, image_bb.Min, image_bb.Max, uv0, uv1, col);
 
     return pressed;
 }
@@ -4078,7 +4078,7 @@ bool RadioButton(const char* label, int* v, int v_button)
     return pressed;
 }
 
-bool ImageRadioButton(const char* label, int index, const ImVec2& size, const ImVec2& uv, const ImVec2& uv_size, bool active)
+bool ImageRadioButton(const char* label, int index, const ImVec2& size, const ImVec2& uv0, const ImVec2& uv1, bool active)
 {
     ImGuiState& g = GImGui;
     ImGuiWindow* window = GetCurrentWindow();
@@ -4103,9 +4103,9 @@ bool ImageRadioButton(const char* label, int index, const ImVec2& size, const Im
     ImGuiAabb image_bb(bb);
     image_bb.Min += style.FramePadding;
     image_bb.Max -= style.FramePadding;
-    
+
     const ImU32 col = window->Color(((hovered && pressed) || active) ? ImGuiCol_ImageButtonActive : hovered ? ImGuiCol_ImageButtonHovered : ImGuiCol_ImageButton);
-    window->DrawList->AddImage(index, image_bb.Min, image_bb.Max, uv, uv_size, col);
+    window->DrawList->AddImage(index, image_bb.Min, image_bb.Max, uv0, uv1, col);
     if (active)
       window->DrawList->AddRect(bb.Min, bb.Max, 0xFFFFFFFF);
 
@@ -4115,9 +4115,9 @@ bool ImageRadioButton(const char* label, int index, const ImVec2& size, const Im
     return pressed;
 }
 
-bool ImageRadioButton(const char* label, int index, const ImVec2& size, const ImVec2& uv, const ImVec2& uv_size, int* v, int v_button)
+bool ImageRadioButton(const char* label, int index, const ImVec2& size, const ImVec2& uv0, const ImVec2& uv1, int* v, int v_button)
 {
-    const bool pressed = ImGui::ImageRadioButton(label, index, size, uv, uv_size, *v == v_button);
+    const bool pressed = ImGui::ImageRadioButton(label, index, size, uv0, uv1, *v == v_button);
     if (pressed)
     {
         *v = v_button;
@@ -5653,14 +5653,12 @@ void ImDrawList::AddText(ImFont font, float font_size, const ImVec2& pos, ImU32 
     vtx_write -= (vtx_count_max - vtx_count);
 }
 
-void ImDrawList::AddImage(int index, const ImVec2& a, const ImVec2& b, const ImVec2& uv0, const ImVec2& uv_size, ImU32 col)
+void ImDrawList::AddImage(int index, const ImVec2& a, const ImVec2& b, const ImVec2& uv0, const ImVec2& uv1, ImU32 col)
 {
     if ((col >> 24) == 0)
         return;
 
     SetImageIndex(index);
-
-    ImVec2 uv1(uv0.x + uv_size.x, uv0.y + uv_size.y);
 
     ReserveVertices(6);
     AddVtxUv(ImVec2(a.x,a.y), col, ImVec2(uv0.x,uv0.y));
